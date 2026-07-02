@@ -35,7 +35,7 @@
     "url": "git+https://github.com/LuisitoLuis/geojson-modern.git"
   },
   "devDependencies": {
-    "@biomejs/biome": "1.9.4",
+    "@biomejs/biome": "2.5.1",
     "tsup": "8.5.1",
     "vitest": "4.1.9"
   }
