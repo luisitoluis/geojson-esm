@@ -25,14 +25,14 @@
     "test:coverage": "vitest run --coverage",
     "lint": "biome check .",
     "lint:fix": "biome check --write .",
-    "prepublishOnly": "npm run build"
+    "prepublishOnly": "pnpm run build"
   },
   "keywords": ["geojson", "geo", "gis", "parser", "esm"],
   "author": "Luis (LuisitoLuis)",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/LuisitoLuis/geojson-modern.git"
+    "url": "git+https://github.com/LuisitoLuis/geojson.js-modern.git"
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.1",
