@@ -1,4 +1,4 @@
-# geojson-modern
+# geojson.js-modern
 
 Turn plain JS objects into [GeoJSON](https://geojson.org). A modernized,
 dependency-free ESM reimplementation of the classic
