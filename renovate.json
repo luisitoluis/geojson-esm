@@ -4,7 +4,7 @@
     "config:best-practices",
     ":configMigration"
   ],
-  "labels": ["renovatebot , dependencies"],
+  "labels": ["renovatebot"],
   "minimumReleaseAge": "1 day",
   "internalChecksFilter": "strict"
 }
