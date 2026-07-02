@@ -1,12 +1,10 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": ["config:recommended"],
-  "minimumReleaseAge": "3 days",
-  "labels": ["dependencies"],
-  "packageRules": [
-    {
-      "matchDepTypes": ["devDependencies"],
-      "addLabels": ["dev-dependencies"]
-    }
-  ]
+  "extends": [
+    "config:best-practices",
+    ":configMigration"
+  ],
+  "labels": ["renovatebot , dependencies"],
+  "minimumReleaseAge": "1 day",
+  "internalChecksFilter": "strict"
 }
