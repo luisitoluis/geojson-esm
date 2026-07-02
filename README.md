@@ -85,4 +85,4 @@ CI/CD.
 
 ## License
 
-MIT — inspired by [caseycesari/GeoJSON.js](https://github.com/caseycesari/GeoJSON.js) (MIT).
+MIT-(https://github.com/LuisitoLuis/geojson.js-modern) (MIT).
