@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { defaults, parse } from "../src/index.js";
+import { defaults, parse } from "./index.js";
 
 const sampleData = [
   { name: "Location A", category: "Store", lat: 39.984, lng: -75.343 },
@@ -143,5 +143,129 @@ describe("parse", () => {
     const result = parse(sampleData);
     expect(result.features).toHaveLength(3);
     defaults.Point = undefined;
+  });
+
+  it("accepts a 3-tuple Point with altitude", () => {
+    const data = [{ name: "Mountain", lat: 39.984, lng: -75.343, alt: 142 }];
+    const result = parse(data, { Point: ["lat", "lng", "alt"] });
+    expect(result.features[0].geometry).toEqual({
+      type: "Point",
+      coordinates: [-75.343, 39.984, 142],
+    });
+  });
+
+  it("omits altitude when the third tuple element is missing", () => {
+    const data = [{ name: "Spot", lat: 39.984, lng: -75.343 }];
+    const result = parse(data, { Point: ["lat", "lng", "alt"] });
+    expect(result.features[0].geometry.coordinates).toEqual([-75.343, 39.984]);
+  });
+
+  it("resolves dotted-path attribute names for Point", () => {
+    const data = [{ name: "Place", address: { lat: 39.984, lng: -75.343 } }];
+    const result = parse(data, { Point: ["address.lat", "address.lng"] });
+    expect(result.features[0].geometry.coordinates).toEqual([-75.343, 39.984]);
+  });
+
+  it("resolves dotted paths combined with a 3-tuple", () => {
+    const data = [{ name: "Peak", loc: { lat: 39.984, lng: -75.343, alt: 200 } }];
+    const result = parse(data, { Point: ["loc.lat", "loc.lng", "loc.alt"] });
+    expect(result.features[0].geometry.coordinates).toEqual([-75.343, 39.984, 200]);
+  });
+
+  it("resolves dotted paths for LineString-style nested arrays", () => {
+    const data = [
+      {
+        name: "Path",
+        track: {
+          points: [
+            [0, 100],
+            [1, 101],
+          ],
+        },
+      },
+    ];
+    const result = parse(data, { LineString: "track.points" });
+    expect(result.features[0].geometry).toEqual({
+      type: "LineString",
+      coordinates: [
+        [100, 0],
+        [101, 1],
+      ],
+    });
+  });
+
+  it("passes through a pre-encoded GeoJSON geometry", () => {
+    const data = [
+      {
+        name: "Pre-encoded",
+        geo: { type: "Point", coordinates: [125.6, 10.1] },
+      },
+    ];
+    const result = parse(data, { GeoJSON: "geo" });
+    expect(result.features[0].geometry).toEqual({
+      type: "Point",
+      coordinates: [125.6, 10.1],
+    });
+  });
+
+  it("excludes the GeoJSON attribute from properties", () => {
+    const data = [{ name: "Pre-encoded", geo: { type: "Point", coordinates: [0, 0] } }];
+    const result = parse(data, { GeoJSON: "geo" });
+    expect(result.features[0].properties).toEqual({ name: "Pre-encoded" });
+  });
+
+  it("builds a Polygon from corner points in separate attributes", () => {
+    const data = [
+      {
+        name: "Block",
+        northeast: { lat: 10, lng: 20 },
+        southwest: { lat: 0, lng: 0 },
+      },
+    ];
+    const result = parse(data, {
+      Polygon: {
+        northeast: ["lat", "lng"],
+        southwest: ["lat", "lng"],
+      },
+    });
+    expect(result.features[0].geometry.type).toBe("Polygon");
+    expect(result.features[0].geometry.coordinates[0]).toEqual([
+      [20, 10],
+      [0, 0],
+    ]);
+  });
+
+  it("skips a bbox-style Polygon item when a key is missing", () => {
+    const data = [
+      {
+        name: "Broken",
+        northeast: { lat: 10, lng: 20 },
+      },
+    ];
+    expect(() =>
+      parse(data, {
+        Polygon: {
+          northeast: ["lat", "lng"],
+          southwest: ["lat", "lng"],
+        },
+      }),
+    ).toThrow();
+  });
+
+  it("detects geometry in user-supplied param order, not a fixed order", () => {
+    const result = parse(
+      [
+        {
+          lat: 1,
+          lng: 2,
+          line: [
+            [0, 0],
+            [1, 1],
+          ],
+        },
+      ],
+      { LineString: "line", Point: ["lat", "lng"] },
+    );
+    expect(result.features[0].geometry.type).toBe("LineString");
   });
 });

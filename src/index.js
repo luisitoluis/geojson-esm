@@ -15,6 +15,7 @@ const GEOMETRY_TYPES = [
   "MultiLineString",
   "Polygon",
   "MultiPolygon",
+  "GeoJSON",
 ];
 
 /**
@@ -28,6 +29,14 @@ export const defaults = {};
 
 function isNil(value) {
   return value === null || value === undefined;
+}
+
+/** Walk a dot-separated path on an object, returning undefined for any miss. */
+function resolvePath(item, path) {
+  if (typeof path !== "string" || !path.includes(".")) return item[path];
+  return path.split(".").reduce((acc, key) => {
+    return acc == null ? undefined : acc[key];
+  }, item);
 }
 
 /** Normalize a single coordinate pair into GeoJSON [x, y] order. */
@@ -44,41 +53,105 @@ function toCoordPair(pair) {
   throw new TypeError(`Cannot convert value to a coordinate pair: ${JSON.stringify(pair)}`);
 }
 
-const coordinateBuilders = {
+const geometryBuilders = {
   Point(item, attr) {
-    const [latAttr, lngAttr] = attr;
-    return [item[lngAttr], item[latAttr]];
+    const [latAttr, lngAttr, altAttr] = attr;
+    const coords = [resolvePath(item, lngAttr), resolvePath(item, latAttr)];
+    if (altAttr !== undefined) {
+      const alt = resolvePath(item, altAttr);
+      if (!isNil(alt)) coords.push(alt);
+    }
+    return { type: "Point", coordinates: coords };
   },
   MultiPoint(item, attr) {
-    return item[attr].map(toCoordPair);
+    return {
+      type: "MultiPoint",
+      coordinates: resolvePath(item, attr).map(toCoordPair),
+    };
   },
   LineString(item, attr) {
-    return item[attr].map(toCoordPair);
+    return {
+      type: "LineString",
+      coordinates: resolvePath(item, attr).map(toCoordPair),
+    };
   },
   MultiLineString(item, attr) {
-    return item[attr].map((line) => line.map(toCoordPair));
+    return {
+      type: "MultiLineString",
+      coordinates: resolvePath(item, attr).map((line) => line.map(toCoordPair)),
+    };
   },
   Polygon(item, attr) {
-    return item[attr].map((ring) => ring.map(toCoordPair));
+    if (attr && typeof attr === "object" && !Array.isArray(attr)) {
+      const points = Object.keys(attr).map((key) => {
+        const subItem = item[key];
+        const [latAttr, lngAttr, altAttr] = attr[key];
+        const coords = [resolvePath(subItem, lngAttr), resolvePath(subItem, latAttr)];
+        if (altAttr !== undefined) {
+          const alt = resolvePath(subItem, altAttr);
+          if (!isNil(alt)) coords.push(alt);
+        }
+        return coords;
+      });
+      return { type: "Polygon", coordinates: [points] };
+    }
+    return {
+      type: "Polygon",
+      coordinates: resolvePath(item, attr).map((ring) => ring.map(toCoordPair)),
+    };
   },
   MultiPolygon(item, attr) {
-    return item[attr].map((poly) => poly.map((ring) => ring.map(toCoordPair)));
+    return {
+      type: "MultiPolygon",
+      coordinates: resolvePath(item, attr).map((poly) => poly.map((ring) => ring.map(toCoordPair))),
+    };
+  },
+  GeoJSON(item, attr) {
+    return resolvePath(item, attr);
   },
 };
 
-/** Which item attribute(s) does this geometry type depend on? */
+/**
+ * Which item attribute(s) does this geometry type depend on?
+ * Returned as an array of attribute names. For the bbox-style Polygon
+ * ({ne: [...], sw: [...]}) we return an empty array so the wrapper keys
+ * are not stripped from properties — matches the original package.
+ */
 function attrsForType(type, attr) {
-  return type === "Point" ? attr : [attr];
+  if (type === "Point" && Array.isArray(attr)) {
+    return attr.filter((k) => k !== undefined);
+  }
+  if (type === "Polygon" && attr && typeof attr === "object" && !Array.isArray(attr)) {
+    return [];
+  }
+  return [attr];
 }
 
 function isGeometryPresent(item, type, attr) {
+  if (type === "Polygon" && attr && typeof attr === "object" && !Array.isArray(attr)) {
+    return Object.keys(attr).every((key) => !isNil(item[key]));
+  }
   const attrs = attrsForType(type, attr);
-  return attrs.every((key) => !isNil(item[key]));
+  // For Point with a tuple, only the first two attrs (lat, lng) are
+  // required; the third (alt) is optional.
+  const required = type === "Point" && Array.isArray(attr) ? attrs.slice(0, 2) : attrs;
+  return required.every((key) => !isNil(resolvePath(item, key)));
 }
 
-function detectGeometry(item, params) {
-  for (const type of GEOMETRY_TYPES) {
-    const attr = params[type];
+/**
+ * Geometry detection follows the order the user specified in `parse()`'s
+ * second argument (e.g. `{ LineString: "line", Point: ["lat", "lng"] }`),
+ * then falls back to anything configured via `defaults`. `settings` is
+ * used only to look up the actual value.
+ */
+function detectGeometry(item, userParams, settings) {
+  const userGeomKeys = Object.keys(userParams).filter((k) => GEOMETRY_TYPES.includes(k));
+  const orderedKeys = [
+    ...userGeomKeys,
+    ...Object.keys(settings).filter((k) => GEOMETRY_TYPES.includes(k) && !userGeomKeys.includes(k)),
+  ];
+  for (const type of orderedKeys) {
+    const attr = settings[type];
     if (isNil(attr)) continue;
     if (isGeometryPresent(item, type, attr)) {
       return { type, attr };
@@ -129,28 +202,28 @@ function extendBbox(bbox, coordinates) {
   return bbox;
 }
 
-function itemToFeature(item, params) {
-  const detected = detectGeometry(item, params);
+function itemToFeature(item, userParams, settings) {
+  const detected = detectGeometry(item, userParams, settings);
 
   if (!detected) {
-    if (params.removeInvalidGeometries) return null;
+    if (settings.removeInvalidGeometries) return null;
     throw new Error(
       `Unable to detect a geometry for item: ${JSON.stringify(item)}. Check that the configured geometry attribute(s) are present, or set removeInvalidGeometries: true to skip them.`,
     );
   }
 
   const { type, attr } = detected;
-  const coordinates = coordinateBuilders[type](item, attr);
+  const geometry = geometryBuilders[type](item, attr);
   const geometryAttrs = attrsForType(type, attr);
-  const properties = buildProperties(item, params, geometryAttrs);
+  const properties = buildProperties(item, settings, geometryAttrs);
 
   const feature = {
     type: "Feature",
-    geometry: { type, coordinates },
+    geometry,
     properties,
   };
 
-  if (params.bbox) {
+  if (settings.bbox) {
     feature.bbox = extendBbox(
       [
         Number.POSITIVE_INFINITY,
@@ -158,7 +231,7 @@ function itemToFeature(item, params) {
         Number.NEGATIVE_INFINITY,
         Number.NEGATIVE_INFINITY,
       ],
-      coordinates,
+      geometry.coordinates,
     );
   }
 
@@ -174,11 +247,15 @@ function itemToFeature(item, params) {
  * @returns {object|undefined}
  */
 export function parse(data, params, callback) {
-  const settings = { ...defaults, ...(params ?? {}) };
+  // Drop undefined values so stale `defaults` keys (e.g. after a reset
+  // to undefined) don't shift key iteration order in the merged settings.
+  const merged = { ...defaults, ...(params ?? {}) };
+  const settings = Object.fromEntries(Object.entries(merged).filter(([, v]) => v !== undefined));
   const items = Array.isArray(data) ? data : [data];
 
+  const userParams = params ?? {};
   const features = items
-    .map((item) => itemToFeature(item, settings))
+    .map((item) => itemToFeature(item, userParams, settings))
     .filter((feature) => feature !== null);
 
   const featureCollection = {
