@@ -8,8 +8,8 @@ with Vitest, linting with Biome, CI with GitHub Actions, dependency updates
 via Renovate).
 
 [![npm version](https://img.shields.io/npm/v/geojson-modern)](https://www.npmjs.com/package/geojson-modern)
-[![CI](https://github.com/LuisitoLuis/geojson.js-modern/actions/workflows/ci.yml/badge.svg)](https://github.com/LuisitoLuis/geojson.js-modern/actions/workflows/ci.yml)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/LuisitoLuis/geojson.js-modern/blob/main/LICENSE)
+[![CI](https://github.com/LuisitoLuis/geojson.js/actions/workflows/ci.yml/badge.svg)](https://github.com/LuisitoLuis/geojson.js/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/LuisitoLuis/geojson.js/blob/main/LICENSE)
 ![Node: >=18](https://img.shields.io/badge/node-%3E%3D18-339933)
 ![Types: TypeScript](https://img.shields.io/badge/types-TypeScript-3178c6)
 
@@ -29,7 +29,7 @@ Requires Node.js 18 or later. Ships ESM, CJS, and TypeScript declarations.
 ESM:
 
 ```js
-import { parse } from "geojson-modern";
+import { parse } from "geojson.js";
 
 const data = [
   { name: "Location A", category: "Store", lat: 39.984, lng: -75.343 },
@@ -49,7 +49,7 @@ const geojson = parse(data, { Point: ["lat", "lng"] });
 Or via the default export:
 
 ```js
-const geojson = require("geojson-modern").default;
+const geojson = require("geojson.js").default;
 geojson.parse(data, { Point: ["lat", "lng"] });
 ```
 
@@ -166,4 +166,4 @@ backfills four features that the original had been missing.
 
 ## License
 
-[MIT](https://github.com/LuisitoLuis/geojson.js-modern/blob/main/LICENSE).
+[MIT](https://github.com/LuisitoLuis/geojson.js/blob/main/LICENSE).
