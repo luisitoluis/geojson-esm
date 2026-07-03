@@ -1,19 +1,32 @@
 # geojson.js-modern
 
 Turn plain JS objects into [GeoJSON](https://geojson.org). A modernized,
-dependency-free ESM reimplementation of the classic
+dependency-free reimplementation of the classic
 [`geojson`](https://github.com/caseycesari/GeoJSON.js) package: same core
 idea, rebuilt with a modern toolchain (native ESM + CJS via `tsup`, tests
 with Vitest, linting with Biome, CI with GitHub Actions, dependency updates
 via Renovate).
 
+[![npm version](https://img.shields.io/npm/v/geojson-modern)](https://www.npmjs.com/package/geojson-modern)
+[![CI](https://github.com/LuisitoLuis/geojson.js-modern/actions/workflows/ci.yml/badge.svg)](https://github.com/LuisitoLuis/geojson.js-modern/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/LuisitoLuis/geojson.js-modern/blob/main/LICENSE)
+![Node: >=18](https://img.shields.io/badge/node-%3E%3D18-339933)
+![Types: TypeScript](https://img.shields.io/badge/types-TypeScript-3178c6)
+
 ## Install
 
 ```bash
 npm install geojson-modern
+# or
+pnpm install geojson-modern
+yarn install geojson-modern
 ```
 
+Requires Node.js 18 or later. Ships ESM, CJS, and TypeScript declarations.
+
 ## Usage
+
+ESM:
 
 ```js
 import { parse } from "geojson-modern";
@@ -24,6 +37,20 @@ const data = [
 ];
 
 const geojson = parse(data, { Point: ["lat", "lng"] });
+```
+
+CommonJS:
+
+```js
+const { parse } = require("geojson-modern");
+const geojson = parse(data, { Point: ["lat", "lng"] });
+```
+
+Or via the default export:
+
+```js
+const geojson = require("geojson-modern").default;
+geojson.parse(data, { Point: ["lat", "lng"] });
 ```
 
 ```json
@@ -39,14 +66,40 @@ const geojson = parse(data, { Point: ["lat", "lng"] });
 }
 ```
 
-### Options
+When a callback is passed as the third argument the function returns
+`undefined` and the result is delivered to the callback:
+
+```js
+parse(data, { Point: ["lat", "lng"] }, (geojson) => {
+  // do something with the FeatureCollection
+});
+```
+
+## Features
+
+On top of the original API, this fork supports:
+
+- **3-tuple Point with altitude** — `Point: ["lat", "lng", "alt"]` produces
+  `coordinates: [lng, lat, alt]`.
+- **Dotted-path attribute names** — `Point: ["address.lat", "address.lng"]`
+  walks into nested objects, useful when coordinates live under a sub-object.
+- **GeoJSON pass-through** — `GeoJSON: "attr"` lets an item carry a
+  pre-encoded GeoJSON geometry that gets used as-is.
+- **Polygon from corner attributes** — `Polygon: { ne: ["lat", "lng"], sw: [...] }`
+  builds a polygon from corner points that live in separate attributes
+  (typical of address records). Each corner tuple accepts an optional
+  altitude in the third position.
+- **Module-level `defaults`** — set `defaults.Point = ["lat", "lng"]` once
+  to skip repeating the same config on every call.
+
+## Options
 
 | Option | Type | Description |
 |---|---|---|
 | `Point` | `[string, string]` \| `[string, string, string]` | `[latAttr, lngAttr]` — the two item attributes holding lat/lng. Add a third element to include altitude (`[lng, lat, alt]`). |
 | `LineString` / `MultiPoint` | `string` | attribute holding nested `[lat, lng]` coordinate data |
 | `MultiLineString` | `string` | attribute holding an array of arrays of `[lat, lng]` pairs |
-| `Polygon` | `string` \| `object` | string: attribute holding nested rings. object: `{ corner: [latAttr, lngAttr] }` shape, builds a polygon from corner points that live in separate attributes |
+| `Polygon` | `string` \| `object` | string: attribute holding nested rings. object: `{ corner: [latAttr, lngAttr] \| [latAttr, lngAttr, altAttr] }` — builds a polygon from corner points that live in separate attributes |
 | `MultiPolygon` | `string` | attribute holding nested polygon coordinates |
 | `GeoJSON` | `string` | pass-through: attribute holding a pre-encoded GeoJSON geometry object `{ type, coordinates, ... }` |
 | `include` | `string[]` | whitelist of attributes to keep in `properties` |
@@ -60,21 +113,13 @@ const geojson = parse(data, { Point: ["lat", "lng"] });
 Attribute names accept dot notation to reach into nested objects:
 `Point: ['address.lat', 'address.lng']`.
 
-A callback can be passed as the third argument instead of using the return
-value: `parse(data, params, (geojson) => { ... })`.
+Geometry type detection follows the order you specify in `parse()`'s second
+argument; defaults fill in for anything you leave out.
 
-Repeated defaults can be set once:
+### Examples
 
-```js
-import { defaults, parse } from "geojson-modern";
-
-defaults.Point = ["lat", "lng"];
-parse(data); // no need to repeat Point every time
-```
-
-Geometry type detection follows the order you specify in `parse()`'s
-second argument; defaults fill in for anything you leave out. Pass-through
-GeoJSON geometries are useful when items already contain valid GeoJSON:
+Pass-through GeoJSON geometries are useful when items already contain valid
+GeoJSON:
 
 ```js
 const data = [
@@ -84,37 +129,40 @@ parse(data, { GeoJSON: "geo" });
 ```
 
 Polygon corner points can live in separate attributes (e.g. an address
-record with `ne` and `sw` keys):
+record with `ne` and `sw` keys), with optional altitude per corner:
 
 ```js
 const data = [
-  { name: "Block", ne: { lat: 10, lng: 20 }, sw: { lat: 0, lng: 0 } },
+  {
+    name: "Block",
+    ne: { lat: 10, lng: 20, alt: 100 },
+    sw: { lat: 0, lng: 0, alt: 95 },
+  },
 ];
 parse(data, {
   Polygon: {
-    ne: ["lat", "lng"],
-    sw: ["lat", "lng"],
+    ne: ["lat", "lng", "alt"],
+    sw: ["lat", "lng", "alt"],
   },
 });
 ```
 
-## Development
+Module-level defaults:
 
-```bash
-npm install
-npm test        # vitest run
-npm run lint     # biome check
-npm run build    # tsup -> dist/ (ESM + CJS + .d.ts)
+```js
+import { defaults, parse } from "geojson-modern";
+
+defaults.Point = ["lat", "lng"];
+parse(data); // no need to repeat Point every time
 ```
-
 ## Why a fork?
 
 The original `geojson` package is small, stable, and still works — but its
 tooling (Grunt, PhantomJS, Travis CI, CommonJS-only) hasn't been touched
 since 2019. This rewrite keeps the same simple API and behavior while
-updating the tooling: native ESM/CJS dual output, Vitest instead of
-Grunt+PhantomJS, Biome instead of JSHint, and GitHub Actions + Renovate for
-CI/CD.
+updating the tooling (native ESM/CJS dual output, Vitest instead of
+Grunt+PhantomJS, Biome instead of JSHint, GitHub Actions + Renovate) and
+backfills four features that the original had been missing.
 
 ## License
 
