@@ -4,15 +4,23 @@ export type GeometryType =
   | "LineString"
   | "MultiLineString"
   | "Polygon"
-  | "MultiPolygon";
+  | "MultiPolygon"
+  | "GeoJSON";
+
+export type PointAttr = [string, string] | [string, string, string];
+
+export type PolygonCorner = [string, string] | [string, string, string];
+
+export type PolygonAttr = string | Record<string, PolygonCorner>;
 
 export interface ParseParams {
-  Point?: [string, string];
+  Point?: PointAttr;
   MultiPoint?: string;
   LineString?: string;
   MultiLineString?: string;
-  Polygon?: string;
+  Polygon?: PolygonAttr;
   MultiPolygon?: string;
+  GeoJSON?: string;
   include?: string[];
   exclude?: string[];
   extra?: Record<string, unknown> | ((item: Record<string, unknown>) => Record<string, unknown>);
