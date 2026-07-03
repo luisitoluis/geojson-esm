@@ -43,8 +43,12 @@ const geojson = parse(data, { Point: ["lat", "lng"] });
 
 | Option | Type | Description |
 |---|---|---|
-| `Point` | `[string, string]` | `[latAttr, lngAttr]` — the two item attributes holding lat/lng |
-| `LineString` / `MultiLineString` / `Polygon` / `MultiPolygon` / `MultiPoint` | `string` | attribute holding nested `[lat, lng]` coordinate data |
+| `Point` | `[string, string]` \| `[string, string, string]` | `[latAttr, lngAttr]` — the two item attributes holding lat/lng. Add a third element to include altitude (`[lng, lat, alt]`). |
+| `LineString` / `MultiPoint` | `string` | attribute holding nested `[lat, lng]` coordinate data |
+| `MultiLineString` | `string` | attribute holding an array of arrays of `[lat, lng]` pairs |
+| `Polygon` | `string` \| `object` | string: attribute holding nested rings. object: `{ corner: [latAttr, lngAttr] }` shape, builds a polygon from corner points that live in separate attributes |
+| `MultiPolygon` | `string` | attribute holding nested polygon coordinates |
+| `GeoJSON` | `string` | pass-through: attribute holding a pre-encoded GeoJSON geometry object `{ type, coordinates, ... }` |
 | `include` | `string[]` | whitelist of attributes to keep in `properties` |
 | `exclude` | `string[]` | blacklist of attributes to drop from `properties` |
 | `extra` | `object \| (item) => object` | extra properties merged into each feature |
@@ -52,6 +56,9 @@ const geojson = parse(data, { Point: ["lat", "lng"] });
 | `bbox` | `boolean` | compute a bounding box for the collection and each feature |
 | `crs` | `object` | attach a `crs` member to the output |
 | `removeInvalidGeometries` | `boolean` | skip items with missing/invalid geometry instead of throwing |
+
+Attribute names accept dot notation to reach into nested objects:
+`Point: ['address.lat', 'address.lng']`.
 
 A callback can be passed as the third argument instead of using the return
 value: `parse(data, params, (geojson) => { ... })`.
@@ -63,6 +70,32 @@ import { defaults, parse } from "geojson-modern";
 
 defaults.Point = ["lat", "lng"];
 parse(data); // no need to repeat Point every time
+```
+
+Geometry type detection follows the order you specify in `parse()`'s
+second argument; defaults fill in for anything you leave out. Pass-through
+GeoJSON geometries are useful when items already contain valid GeoJSON:
+
+```js
+const data = [
+  { name: "A", geo: { type: "Point", coordinates: [125.6, 10.1] } },
+];
+parse(data, { GeoJSON: "geo" });
+```
+
+Polygon corner points can live in separate attributes (e.g. an address
+record with `ne` and `sw` keys):
+
+```js
+const data = [
+  { name: "Block", ne: { lat: 10, lng: 20 }, sw: { lat: 0, lng: 0 } },
+];
+parse(data, {
+  Polygon: {
+    ne: ["lat", "lng"],
+    sw: ["lat", "lng"],
+  },
+});
 ```
 
 ## Development
@@ -85,4 +118,4 @@ CI/CD.
 
 ## License
 
-MIT-(https://github.com/LuisitoLuis/geojson.js-modern) (MIT).
+[MIT](https://github.com/LuisitoLuis/geojson.js-modern/blob/main/LICENSE).
