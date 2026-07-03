@@ -1,8 +1,8 @@
-# geojson.js-modern
+# geojson.js
 
 Turn plain JS objects into [GeoJSON](https://geojson.org). A modernized,
 dependency-free reimplementation of the classic
-[`geojson`](https://github.com/caseycesari/GeoJSON.js) package: same core
+[`GeoJSON.js`](https://github.com/caseycesari/GeoJSON.js) package: same core
 idea, rebuilt with a modern toolchain (native ESM + CJS via `tsup`, tests
 with Vitest, linting with Biome, CI with GitHub Actions, dependency updates
 via Renovate).
@@ -16,10 +16,10 @@ via Renovate).
 ## Install
 
 ```bash
-npm install geojson-modern
+npm install geojson.js
 # or
-pnpm install geojson-modern
-yarn install geojson-modern
+pnpm install geojson.js
+yarn install geojson.js
 ```
 
 Requires Node.js 18 or later. Ships ESM, CJS, and TypeScript declarations.
