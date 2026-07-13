@@ -52,7 +52,7 @@
   },
   "homepage": "https://github.com/LuisitoLuis/geojson.js-modern#readme",
   "devDependencies": {
-    "@biomejs/biome": "2.5.2",
+    "@biomejs/biome": "2.5.3",
     "tsup": "8.5.1",
     "typescript": "7.0.2",
     "vitest": "4.1.9"
