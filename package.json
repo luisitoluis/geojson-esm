@@ -2,7 +2,7 @@
   "name": "geojson-modern",
   "version": "0.1.0",
   "description": "Turn plain JS objects into GeoJSON. A modernized ESM reimplementation of the classic geojson package.",
-  "packageManager": "pnpm@11.19.0",
+  "packageManager": "pnpm@11.20.0",
   "author": "Luis (LuisitoLuis)",
   "license": "MIT",
   "type": "module",
