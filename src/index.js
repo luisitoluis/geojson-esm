@@ -1,7 +1,6 @@
 /**
- * Modern port of caseycesari/GeoJSON.js.
- * Same parse results as v0.4.1: Feature vs FeatureCollection, coordinate
- * handling, defaults, crs, bbox, and invalid-geometry rules.
+ * ESM port of https://github.com/caseycesari/GeoJSON.js v0.4.1.
+ * Same object, same parse results, written in current JavaScript.
  */
 
 const GEOMETRY_TYPES = [
@@ -14,6 +13,8 @@ const GEOMETRY_TYPES = [
   "GeoJSON",
 ];
 
+const geomAttrs = [];
+
 export class InvalidGeometryError extends Error {
   constructor(item, params) {
     super(`Invalid Geometry: item: ${JSON.stringify(item)}, params: ${JSON.stringify(params)}`);
@@ -21,7 +22,7 @@ export class InvalidGeometryError extends Error {
   }
 }
 
-export function isGeometryValid(geometry) {
+function isGeometryValid(geometry) {
   if (!geometry || !Object.keys(geometry).length) return false;
   return (
     !!geometry.type &&
@@ -31,150 +32,139 @@ export function isGeometryValid(geometry) {
   );
 }
 
-function hasOwn(obj, key) {
-  return Object.hasOwn(obj, key);
-}
-
 function isNested(value) {
-  return typeof value === "string" && /^.+\..+$/.test(value);
-}
-
-function walkPath(item, path) {
-  let current = item;
-  for (const key of path.split(".")) {
-    if (current == null || !hasOwn(current, key)) return { ok: false };
-    current = current[key];
-  }
-  return { ok: true, value: current };
+  return /^.+\..+$/.test(value);
 }
 
 function applyDefaults(params, defaults) {
-  const settings = { ...params };
-  for (const setting of Object.keys(defaults)) {
-    if (!settings[setting]) settings[setting] = defaults[setting];
+  const settings = params || {};
+  for (const setting in defaults) {
+    if (Object.hasOwn(defaults, setting) && !settings[setting]) {
+      settings[setting] = defaults[setting];
+    }
   }
   return settings;
 }
 
 function checkCRS(crs) {
   if (crs.type === "name") {
-    if (crs.properties?.name) return true;
+    if (crs.properties && crs.properties.name) return true;
     throw new Error('Invalid CRS. Properties must contain "name" key');
   }
   if (crs.type === "link") {
-    if (crs.properties?.href && crs.properties.type) return true;
+    if (crs.properties && crs.properties.href && crs.properties.type) return true;
     throw new Error('Invalid CRS. Properties must contain "href" and "type" key');
   }
   throw new Error('Invald CRS. Type attribute must be "name" or "link"');
 }
 
-function geomAttrList(geom) {
-  const attrs = [];
-  for (const param of Object.keys(geom)) {
+function setGeomAttrList(geom) {
+  for (const param in geom) {
+    if (!Object.hasOwn(geom, param)) continue;
     const value = geom[param];
     if (typeof value === "string") {
-      attrs.push(value);
-    } else if (value && typeof value === "object") {
-      attrs.push(value[0]);
-      attrs.push(value[1]);
+      geomAttrs.push(value);
+    } else if (typeof value === "object") {
+      geomAttrs.push(value[0]);
+      geomAttrs.push(value[1]);
     }
   }
-  if (attrs.length === 0) throw new Error("No geometry attributes specified");
-  return attrs;
+  if (geomAttrs.length === 0) throw new Error("No geometry attributes specified");
 }
 
-function splitGeom(settings) {
-  const geom = {};
-  for (const param of Object.keys(settings)) {
-    if (GEOMETRY_TYPES.includes(param)) {
-      geom[param] = settings[param];
-      delete settings[param];
+function setGeom(params) {
+  params.geom = {};
+  for (const param in params) {
+    if (Object.hasOwn(params, param) && GEOMETRY_TYPES.includes(param)) {
+      params.geom[param] = params[param];
+      delete params[param];
     }
   }
-  settings.geom = geom;
-  return geomAttrList(geom);
+  setGeomAttrList(params.geom);
+}
+
+function walkNested(item, path) {
+  let current = item;
+  for (const key of path.split(".")) {
+    if (current == null || !Object.hasOwn(current, key)) return { ok: false, value: current };
+    current = current[key];
+  }
+  return { ok: true, value: current };
 }
 
 function buildGeom(item, params) {
   let geom;
 
-  for (const gtype of Object.keys(params.geom)) {
+  for (const gtype in params.geom) {
+    if (!Object.hasOwn(params.geom, gtype)) continue;
     const val = params.geom[gtype];
     const coordinates = [];
 
     if (geom !== undefined && geom !== false) break;
 
-    if (typeof val === "string" && hasOwn(item, val)) {
+    if (typeof val === "string" && Object.hasOwn(item, val)) {
       geom = gtype === "GeoJSON" ? item[val] : { type: gtype, coordinates: item[val] };
     } else if (typeof val === "string" && isNested(val)) {
       geom = undefined;
-      const resolved = walkPath(item, val);
+      const resolved = walkNested(item, val);
       geom = resolved.ok ? { type: gtype, coordinates: resolved.value } : false;
-    } else if (val && typeof val === "object" && !Array.isArray(val)) {
-      const points = Object.keys(val).map((key) =>
-        buildGeom(item[key], { geom: { Point: val[key] } }),
-      );
+    } else if (typeof val === "object" && !Array.isArray(val)) {
+      const points = Object.keys(val).map((key) => buildGeom(item[key], { geom: { Point: val[key] } }));
       geom = {
         type: gtype,
         coordinates: [].concat(points.map((point) => point.coordinates)),
       };
     } else if (
       Array.isArray(val) &&
-      hasOwn(item, val[0]) &&
-      hasOwn(item, val[1]) &&
-      hasOwn(item, val[2])
+      Object.hasOwn(item, val[0]) &&
+      Object.hasOwn(item, val[1]) &&
+      Object.hasOwn(item, val[2])
     ) {
       geom = {
         type: gtype,
         coordinates: [Number(item[val[1]]), Number(item[val[0]]), Number(item[val[2]])],
       };
-    } else if (Array.isArray(val) && hasOwn(item, val[0]) && hasOwn(item, val[1])) {
+    } else if (Array.isArray(val) && Object.hasOwn(item, val[0]) && Object.hasOwn(item, val[1])) {
       geom = {
         type: gtype,
         coordinates: [Number(item[val[1]]), Number(item[val[0]])],
       };
     } else if (Array.isArray(val) && isNested(val[0]) && isNested(val[1]) && isNested(val[2])) {
       geom = undefined;
-      let failed = false;
-      for (const path of val) {
-        const resolved = walkPath(item, path);
+      for (let i = 0; i < val.length; i++) {
+        const resolved = walkNested(item, val[i]);
         if (!resolved.ok) {
-          failed = true;
+          geom = false;
+          coordinates[i] = resolved.value;
           break;
         }
-        coordinates.push(resolved.value);
+        coordinates[i] = resolved.value;
       }
-      geom = failed
-        ? false
-        : {
-            type: gtype,
-            coordinates: [Number(coordinates[1]), Number(coordinates[0]), Number(coordinates[2])],
-          };
-    } else if (Array.isArray(val) && isNested(val[0]) && isNested(val[1])) {
-      let failed = false;
       if (geom !== false) {
-        for (const path of val) {
-          const resolved = walkPath(item, path);
-          if (!resolved.ok) {
-            failed = true;
-            break;
-          }
-          coordinates.push(resolved.value);
-        }
-      } else {
-        failed = true;
+        geom = {
+          type: gtype,
+          coordinates: [Number(coordinates[1]), Number(coordinates[0]), Number(coordinates[2])],
+        };
       }
-      if (!failed) {
+    } else if (Array.isArray(val) && isNested(val[0]) && isNested(val[1])) {
+      for (let i = 0; i < val.length; i++) {
+        const resolved = walkNested(item, val[i]);
+        if (!resolved.ok) {
+          geom = false;
+          coordinates[i] = resolved.value;
+          break;
+        }
+        coordinates[i] = resolved.value;
+      }
+      if (geom !== false) {
         geom = {
           type: gtype,
           coordinates: [Number(coordinates[1]), Number(coordinates[0])],
         };
-      } else {
-        geom = false;
       }
     } else if (
       Array.isArray(val) &&
-      val[0]?.constructor?.name === "Object" &&
+      val[0].constructor.name === "Object" &&
       Object.keys(val[0])[0] === "coordinates"
     ) {
       const order = val[0].coordinates;
@@ -188,86 +178,100 @@ function buildGeom(item, params) {
     }
   }
 
-  if (params.doThrows?.invalidGeometry && !geojson.isGeometryValid(geom)) {
+  if (params.doThrows && params.doThrows.invalidGeometry && !GeoJSON.isGeometryValid(geom)) {
     throw new InvalidGeometryError(item, params);
   }
 
   return geom;
 }
 
-function buildProperties(item, params, geometryAttrs) {
-  const properties = {};
-
-  if (!params.exclude && !params.include) {
-    for (const attr of Object.keys(item)) {
-      if (!geometryAttrs.includes(attr)) properties[attr] = item[attr];
-    }
-  } else if (params.include) {
-    for (const attr of params.include) properties[attr] = item[attr];
-  } else {
-    for (const attr of Object.keys(item)) {
-      if (!geometryAttrs.includes(attr) && !params.exclude.includes(attr)) {
-        properties[attr] = item[attr];
-      }
-    }
+function addExtra(properties, extra) {
+  for (const key in extra) {
+    if (Object.hasOwn(extra, key)) properties[key] = extra[key];
   }
-
-  if (params.extra && typeof params.extra === "object") {
-    for (const key of Object.keys(params.extra)) properties[key] = params.extra[key];
-  }
-
-  return properties;
 }
 
-function getFeature(item, params, geometryAttrs) {
-  return {
-    type: "Feature",
-    geometry: buildGeom(item, params),
-    properties: buildProperties(item, params, geometryAttrs),
+function getPropFunction(params) {
+  let copyAttributes;
+  if (!params.exclude && !params.include) {
+    copyAttributes = function copyAll(properties) {
+      for (const attr in this) {
+        if (Object.hasOwn(this, attr) && !geomAttrs.includes(attr)) properties[attr] = this[attr];
+      }
+    };
+  } else if (params.include) {
+    copyAttributes = function copyIncluded(properties) {
+      for (const attr of params.include) properties[attr] = this[attr];
+    };
+  } else {
+    copyAttributes = function copyExcluded(properties) {
+      for (const attr in this) {
+        if (Object.hasOwn(this, attr) && !geomAttrs.includes(attr) && !params.exclude.includes(attr)) {
+          properties[attr] = this[attr];
+        }
+      }
+    };
+  }
+
+  return function propertiesOfItem() {
+    const properties = {};
+    copyAttributes.call(this, properties);
+    if (params.extra) addExtra(properties, params.extra);
+    return properties;
   };
 }
 
-function addOptionals(geojsonOutput, settings) {
+function getFeature(item, params, propFunc) {
+  return {
+    type: "Feature",
+    geometry: buildGeom(item, params),
+    properties: propFunc.call(item),
+  };
+}
+
+function addOptionals(output, settings) {
   if (settings.crs && checkCRS(settings.crs)) {
-    if (settings.isPostgres) geojsonOutput.geometry.crs = settings.crs;
-    else geojsonOutput.crs = settings.crs;
+    if (settings.isPostgres) output.geometry.crs = settings.crs;
+    else output.crs = settings.crs;
   }
-  if (settings.bbox) geojsonOutput.bbox = settings.bbox;
+  if (settings.bbox) output.bbox = settings.bbox;
   if (settings.extraGlobal) {
-    geojsonOutput.properties = {};
-    for (const key of Object.keys(settings.extraGlobal)) {
-      geojsonOutput.properties[key] = settings.extraGlobal[key];
+    output.properties = {};
+    for (const key in settings.extraGlobal) {
+      if (Object.hasOwn(settings.extraGlobal, key)) output.properties[key] = settings.extraGlobal[key];
     }
   }
 }
 
-export function parse(objects, params, callback) {
-  const settings = applyDefaults(params, geojson.defaults);
-  const geometryAttrs = splitGeom(settings);
+function parse(objects, params, callback) {
+  const settings = applyDefaults(params, GeoJSON.defaults);
+  geomAttrs.length = 0;
+  setGeom(settings);
+  const propFunc = getPropFunction(settings);
 
   let output;
   if (Array.isArray(objects)) {
     output = { type: "FeatureCollection", features: [] };
     for (const item of objects) {
-      const feature = getFeature(item, settings, geometryAttrs);
-      if (settings.removeInvalidGeometries !== true || geojson.isGeometryValid(feature.geometry)) {
+      const feature = getFeature(item, settings, propFunc);
+      if (settings.removeInvalidGeometries !== true || GeoJSON.isGeometryValid(feature.geometry)) {
         output.features.push(feature);
       }
     }
   } else {
-    output = getFeature(objects, settings, geometryAttrs);
+    output = getFeature(objects, settings, propFunc);
   }
 
   addOptionals(output, settings);
 
-  if (typeof callback === "function") {
+  if (callback && typeof callback === "function") {
     callback(output);
     return undefined;
   }
   return output;
 }
 
-const geojson = {
+const GeoJSON = {
   version: "0.4.1",
   defaults: {
     doThrows: { invalidGeometry: false },
@@ -278,8 +282,8 @@ const geojson = {
   parse,
 };
 
-export const version = geojson.version;
-export const defaults = geojson.defaults;
-export const errors = geojson.errors;
-
-export default geojson;
+export const version = GeoJSON.version;
+export const defaults = GeoJSON.defaults;
+export const errors = GeoJSON.errors;
+export { isGeometryValid, parse };
+export default GeoJSON;

@@ -1,25 +1,58 @@
+<div align="center">
+
 # geojson.js
 
-Turn plain objects into [GeoJSON](https://geojson.org). A dependency-free port of
-[`GeoJSON.js`](https://github.com/caseycesari/GeoJSON.js) v0.4.1: the same `parse`
-results. The package is the source file, with no build step.
+[![CI](https://img.shields.io/github/actions/workflow/status/LuisitoLuis/geojson.js/ci.yml?style=flat&label=CI&labelColor=0a0a0a)](https://github.com/LuisitoLuis/geojson.js/actions/workflows/ci.yml)
+[![license](https://img.shields.io/badge/license-MIT-22c55e?style=flat&labelColor=0a0a0a)](https://github.com/LuisitoLuis/geojson.js/blob/main/LICENSE)
+[![node](https://img.shields.io/badge/node-%3E%3D18-339933?style=flat&labelColor=0a0a0a)](https://github.com/LuisitoLuis/geojson.js/blob/main/package.json)
+[![npm](https://img.shields.io/npm/v/geojson.js?style=for-the-badge&labelColor=0a0a0a)](https://www.npmjs.com/package/geojson.js)
 
-[![CI](https://github.com/LuisitoLuis/geojson.js/actions/workflows/ci.yml/badge.svg)](https://github.com/LuisitoLuis/geojson.js/actions/workflows/ci.yml)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/LuisitoLuis/geojson.js/blob/main/LICENSE)
-![Node: >=18](https://img.shields.io/badge/node-%3E%3D18-339933)
+Turn plain objects into [GeoJSON](https://geojson.org). Same `parse` results as [GeoJSON.js](https://github.com/caseycesari/GeoJSON.js) v0.4.1. The package is the source file, with no build step.
 
-## Install
+Package: [`geojson.js`](https://www.npmjs.com/package/geojson.js)
+
+Visit the [GitHub repository](https://github.com/LuisitoLuis/geojson.js) to get more information.
+
+</div>
+
+## Installation :book:
+
+#### Package install
+
+> Install the package with your favorite package manager. Requires Node.js 20 or later.
+
+- npm
 
 ```bash
-pnpm add geojson-js-modern
+npm install geojson.js
 ```
 
-Requires Node.js 18 or later.
+- pnpm
 
-## Usage
+```bash
+pnpm add geojson.js
+```
+
+- bun
+
+```bash
+bun add geojson.js
+```
+
+- deno
+
+```bash
+deno add npm:geojson.js
+```
+
+## Usage :gear:
+
+#### Example
+
+> Pass an array of objects and the fields that hold latitude and longitude:
 
 ```js
-import { parse } from "geojson-js-modern";
+import { parse } from "geojson.js";
 
 const data = [
   { name: "Location A", category: "Store", lat: 39.984, lng: -75.343 },
@@ -54,7 +87,7 @@ parse(data, { Point: ["lat", "lng"] }, (geojson) => {
 
 The default export is the same object the original package exposed: `parse`, `defaults`, `isGeometryValid`, `errors`, and `version`.
 
-## Options
+### Options
 
 | Option | What it does |
 |---|---|
@@ -76,7 +109,7 @@ Attribute names accept dots: `Point: ['location.lat', 'location.lng']`.
 The first geometry key that matches an item wins, in the order written in the options object. `defaults` fills any key the call left unset.
 
 ```js
-import { defaults, parse } from "geojson-js-modern";
+import { defaults, parse } from "geojson.js";
 
 defaults.Point = ["lat", "lng"];
 defaults.include = ["name"];
@@ -85,7 +118,3 @@ parse(data, {});
 ```
 
 `defaults` starts with `doThrows.invalidGeometry: false` and `removeInvalidGeometries: false`. Invalid items stay in the collection unless you change that.
-
-## License
-
-[MIT](https://github.com/LuisitoLuis/geojson.js/blob/main/LICENSE).

@@ -295,10 +295,14 @@ describe("parse", () => {
     expect(override.crs.properties.name).toBe("urn:ogc:def:crs:OGC:1.3:CRS84");
   });
 
-  it("does not mutate the caller's params", () => {
+  it("moves geometry keys onto params.geom and fills missing defaults", () => {
     const params = { Point: ["lat", "lng"], include: ["name"] };
     parse(sampleData, params);
-    expect(params).toEqual({ Point: ["lat", "lng"], include: ["name"] });
+    expect(params.Point).toBeUndefined();
+    expect(params.geom.Point).toEqual(["lat", "lng"]);
+    expect(params.include).toEqual(["name"]);
+    expect(params.doThrows).toEqual({ invalidGeometry: false });
+    expect(params.removeInvalidGeometries).toBe(false);
   });
 });
 
