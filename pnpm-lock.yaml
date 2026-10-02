@@ -9,7 +9,7 @@ importers:
   .:
     devDependencies:
       oxlint:
-        specifier: ^1.86.0
+        specifier: 1.86.0
         version: 1.86.0
       vitest:
         specifier: 4.1.11
