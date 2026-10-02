@@ -1,60 +1,41 @@
 {
-  "name": "geojson-modern",
-  "version": "0.1.0",
-  "description": "Turn plain JS objects into GeoJSON. A modernized ESM reimplementation of the classic geojson package.",
+  "name": "geojson-js-modern",
+  "version": "0.0.1",
+  "description": "Turn plain JS objects into GeoJSON. Modern ESM port of GeoJSON.js v0.4.1 with the same parse behavior.",
   "packageManager": "pnpm@11.21.0",
-  "author": "Luis (LuisitoLuis)",
+  "author": "Luis (luisitoluis)",
   "license": "MIT",
   "type": "module",
-  "main": "./dist/index.cjs",
-  "module": "./dist/index.js",
-  "types": "./dist/index.d.ts",
-  "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js",
-      "require": "./dist/index.cjs"
-    }
-  },
+  "main": "./src/index.js",
+  "exports": "./src/index.js",
   "files": [
-    "dist"
+    "src/index.js"
   ],
   "sideEffects": false,
   "engines": {
     "node": ">=18"
   },
   "scripts": {
-    "build": "tsup",
     "dev": "vitest",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
-    "lint": "biome check .",
-    "lint:fix": "biome check --write .",
-    "prepublishOnly": "pnpm run build"
+    "lint": "oxlint",
+    "lint:fix": "oxlint --fix"
   },
   "keywords": [
     "geojson",
-    "feature",
-    "featurecollection",
-    "geo",
-    "gis",
-    "geospatial",
-    "coordinates",
-    "parser",
-    "esm"
+    "javascript"
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/LuisitoLuis/geojson.js-modern.git"
+    "url": "git+https://github.com/luisitoluis/geojson.js.git"
   },
   "bugs": {
-    "url": "https://github.com/LuisitoLuis/geojson.js-modern/issues"
+    "url": "https://github.com/luisitoluis/geojson.js/issues"
   },
-  "homepage": "https://github.com/LuisitoLuis/geojson.js-modern#readme",
+  "homepage": "https://github.com/luisitoluis/geojson.js",
   "devDependencies": {
-    "@biomejs/biome": "2.5.14",
-    "tsup": "8.5.1",
-    "typescript": "7.0.2",
+    "oxlint": "^1.86.0",
     "vitest": "4.1.11"
   }
 }

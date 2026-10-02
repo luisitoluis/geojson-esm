@@ -1,35 +1,25 @@
 # geojson.js
 
-Turn plain JS objects into [GeoJSON](https://geojson.org). A modernized,
-dependency-free reimplementation of the classic
-[`GeoJSON.js`](https://github.com/caseycesari/GeoJSON.js) package: same core
-idea, rebuilt with a modern toolchain (native ESM + CJS via `tsup`, tests
-with Vitest, linting with Biome, CI with GitHub Actions, dependency updates
-via Renovate).
+Turn plain objects into [GeoJSON](https://geojson.org). A dependency-free port of
+[`GeoJSON.js`](https://github.com/caseycesari/GeoJSON.js) v0.4.1: the same `parse`
+results. The package is the source file, with no build step.
 
-[![npm version](https://img.shields.io/npm/v/geojson-modern)](https://www.npmjs.com/package/geojson-modern)
 [![CI](https://github.com/LuisitoLuis/geojson.js/actions/workflows/ci.yml/badge.svg)](https://github.com/LuisitoLuis/geojson.js/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/LuisitoLuis/geojson.js/blob/main/LICENSE)
 ![Node: >=18](https://img.shields.io/badge/node-%3E%3D18-339933)
-![Types: TypeScript](https://img.shields.io/badge/types-TypeScript-3178c6)
 
 ## Install
 
 ```bash
-npm install geojson.js
-# or
-pnpm install geojson.js
-yarn install geojson.js
+pnpm add geojson-js-modern
 ```
 
-Requires Node.js 18 or later. Ships ESM, CJS, and TypeScript declarations.
+Requires Node.js 18 or later.
 
 ## Usage
 
-ESM:
-
 ```js
-import { parse } from "geojson.js";
+import { parse } from "geojson-js-modern";
 
 const data = [
   { name: "Location A", category: "Store", lat: 39.984, lng: -75.343 },
@@ -39,19 +29,7 @@ const data = [
 const geojson = parse(data, { Point: ["lat", "lng"] });
 ```
 
-CommonJS:
-
-```js
-const { parse } = require("geojson-modern");
-const geojson = parse(data, { Point: ["lat", "lng"] });
-```
-
-Or via the default export:
-
-```js
-const geojson = require("geojson.js").default;
-geojson.parse(data, { Point: ["lat", "lng"] });
-```
+An array becomes a `FeatureCollection`. One object becomes a `Feature`.
 
 ```json
 {
@@ -66,103 +44,47 @@ geojson.parse(data, { Point: ["lat", "lng"] });
 }
 ```
 
-When a callback is passed as the third argument the function returns
-`undefined` and the result is delivered to the callback:
+A callback receives the result and `parse` returns `undefined`. Anything else in the third argument is ignored and the result is returned.
 
 ```js
 parse(data, { Point: ["lat", "lng"] }, (geojson) => {
-  // do something with the FeatureCollection
+  // FeatureCollection
 });
 ```
 
-## Features
-
-On top of the original API, this fork supports:
-
-- **3-tuple Point with altitude** — `Point: ["lat", "lng", "alt"]` produces
-  `coordinates: [lng, lat, alt]`.
-- **Dotted-path attribute names** — `Point: ["address.lat", "address.lng"]`
-  walks into nested objects, useful when coordinates live under a sub-object.
-- **GeoJSON pass-through** — `GeoJSON: "attr"` lets an item carry a
-  pre-encoded GeoJSON geometry that gets used as-is.
-- **Polygon from corner attributes** — `Polygon: { ne: ["lat", "lng"], sw: [...] }`
-  builds a polygon from corner points that live in separate attributes
-  (typical of address records). Each corner tuple accepts an optional
-  altitude in the third position.
-- **Module-level `defaults`** — set `defaults.Point = ["lat", "lng"]` once
-  to skip repeating the same config on every call.
+The default export is the same object the original package exposed: `parse`, `defaults`, `isGeometryValid`, `errors`, and `version`.
 
 ## Options
 
-| Option | Type | Description |
-|---|---|---|
-| `Point` | `[string, string]` \| `[string, string, string]` | `[latAttr, lngAttr]` — the two item attributes holding lat/lng. Add a third element to include altitude (`[lng, lat, alt]`). |
-| `LineString` / `MultiPoint` | `string` | attribute holding nested `[lat, lng]` coordinate data |
-| `MultiLineString` | `string` | attribute holding an array of arrays of `[lat, lng]` pairs |
-| `Polygon` | `string` \| `object` | string: attribute holding nested rings. object: `{ corner: [latAttr, lngAttr] \| [latAttr, lngAttr, altAttr] }` — builds a polygon from corner points that live in separate attributes |
-| `MultiPolygon` | `string` | attribute holding nested polygon coordinates |
-| `GeoJSON` | `string` | pass-through: attribute holding a pre-encoded GeoJSON geometry object `{ type, coordinates, ... }` |
-| `include` | `string[]` | whitelist of attributes to keep in `properties` |
-| `exclude` | `string[]` | blacklist of attributes to drop from `properties` |
-| `extra` | `object \| (item) => object` | extra properties merged into each feature |
-| `extraGlobal` | `object` | properties merged into the `FeatureCollection` itself |
-| `bbox` | `boolean` | compute a bounding box for the collection and each feature |
-| `crs` | `object` | attach a `crs` member to the output |
-| `removeInvalidGeometries` | `boolean` | skip items with missing/invalid geometry instead of throwing |
+| Option | What it does |
+|---|---|
+| `Point` | `['lat', 'lng']` or `['lat', 'lng', 'alt']` reads those fields and writes `[lng, lat]` or `[lng, lat, alt]`. A string such as `'coords'` copies that array as-is. `[{ coordinates: ['lat', 'lng'] }]` reads a `[lat, lng]` pair from `item.coordinates`. |
+| `LineString`, `MultiPoint`, `MultiLineString`, `Polygon`, `MultiPolygon` | Name of the attribute that already holds coordinates. They are copied as stored. |
+| `Polygon` as an object | `{ northeast: ['lat', 'lng'], southwest: ['lat', 'lng'] }` builds a polygon from corner objects. Coordinates are a flat list of positions. |
+| `GeoJSON` | Attribute that already holds a GeoJSON geometry. It is used as the feature geometry. |
+| `include` / `exclude` | Attributes kept or dropped in `properties`. Geometry attributes are always dropped, except a Point's altitude field. |
+| `extra` | Object merged into each feature's `properties`. |
+| `extraGlobal` | Object stored on the result as `properties`. |
+| `bbox` | Bounding box array copied onto the result. |
+| `crs` | CRS object copied onto the result. `type` must be `"name"` or `"link"`. |
+| `isPostgres` | With `crs`, stores the CRS on `geometry` instead of the feature or collection. |
+| `removeInvalidGeometries` | Drops array items whose geometry fails `isGeometryValid`. |
+| `doThrows.invalidGeometry` | Throws `InvalidGeometryError` instead of emitting an invalid geometry. |
 
-Attribute names accept dot notation to reach into nested objects:
-`Point: ['address.lat', 'address.lng']`.
+Attribute names accept dots: `Point: ['location.lat', 'location.lng']`.
 
-Geometry type detection follows the order you specify in `parse()`'s second
-argument; defaults fill in for anything you leave out.
-
-### Examples
-
-Pass-through GeoJSON geometries are useful when items already contain valid
-GeoJSON:
+The first geometry key that matches an item wins, in the order written in the options object. `defaults` fills any key the call left unset.
 
 ```js
-const data = [
-  { name: "A", geo: { type: "Point", coordinates: [125.6, 10.1] } },
-];
-parse(data, { GeoJSON: "geo" });
-```
-
-Polygon corner points can live in separate attributes (e.g. an address
-record with `ne` and `sw` keys), with optional altitude per corner:
-
-```js
-const data = [
-  {
-    name: "Block",
-    ne: { lat: 10, lng: 20, alt: 100 },
-    sw: { lat: 0, lng: 0, alt: 95 },
-  },
-];
-parse(data, {
-  Polygon: {
-    ne: ["lat", "lng", "alt"],
-    sw: ["lat", "lng", "alt"],
-  },
-});
-```
-
-Module-level defaults:
-
-```js
-import { defaults, parse } from "geojson-modern";
+import { defaults, parse } from "geojson-js-modern";
 
 defaults.Point = ["lat", "lng"];
-parse(data); // no need to repeat Point every time
-```
-## Why a fork?
+defaults.include = ["name"];
 
-The original `geojson` package is small, stable, and still works — but its
-tooling (Grunt, PhantomJS, Travis CI, CommonJS-only) hasn't been touched
-since 2019. This rewrite keeps the same simple API and behavior while
-updating the tooling (native ESM/CJS dual output, Vitest instead of
-Grunt+PhantomJS, Biome instead of JSHint, GitHub Actions + Renovate) and
-backfills four features that the original had been missing.
+parse(data, {});
+```
+
+`defaults` starts with `doThrows.invalidGeometry: false` and `removeInvalidGeometries: false`. Invalid items stay in the collection unless you change that.
 
 ## License
 
