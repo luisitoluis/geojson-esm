@@ -5,6 +5,7 @@
 [![CI](https://img.shields.io/github/actions/workflow/status/LuisitoLuis/geojson.js/ci.yml?style=flat&label=CI&labelColor=0a0a0a)](https://github.com/LuisitoLuis/geojson.js/actions/workflows/ci.yml)
 [![license](https://img.shields.io/badge/license-MIT-22c55e?style=flat&labelColor=0a0a0a)](https://github.com/LuisitoLuis/geojson.js/blob/main/LICENSE)
 [![node](https://img.shields.io/badge/node-%3E%3D18-339933?style=flat&labelColor=0a0a0a)](https://github.com/LuisitoLuis/geojson.js/blob/main/package.json)
+
 [![npm](https://img.shields.io/npm/v/geojson.js?style=for-the-badge&labelColor=0a0a0a)](https://www.npmjs.com/package/geojson.js)
 
 Turn plain objects into [GeoJSON](https://geojson.org). Same `parse` results as [GeoJSON.js](https://github.com/caseycesari/GeoJSON.js) v0.4.1. The package is the source file, with no build step.
