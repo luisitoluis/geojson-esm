@@ -1,16 +1,16 @@
 <div align="center">
 
-# geojson-modern
+# geojson-esm
 
 [![CI](https://img.shields.io/github/actions/workflow/status/LuisitoLuis/geojson.js/ci.yml?style=flat&label=CI&labelColor=0a0a0a)](https://github.com/LuisitoLuis/geojson.js/actions/workflows/ci.yml)
 [![license](https://img.shields.io/badge/license-MIT-22c55e?style=flat&labelColor=0a0a0a)](https://github.com/LuisitoLuis/geojson.js/blob/main/LICENSE)
-[![node](https://img.shields.io/badge/node-%3E%3D18-339933?style=flat&labelColor=0a0a0a)](https://github.com/LuisitoLuis/geojson.js/blob/main/package.json)
+[![node](https://img.shields.io/badge/node-%3E%3D20-339933?style=flat&labelColor=0a0a0a)](https://github.com/LuisitoLuis/geojson.js/blob/main/package.json)
 
-[![npm](https://img.shields.io/npm/v/geojson-modern?style=for-the-badge&labelColor=0a0a0a)](https://www.npmjs.com/package/geojson-modern)
+[![npm](https://img.shields.io/npm/v/geojson-esm?style=for-the-badge&labelColor=0a0a0a)](https://www.npmjs.com/package/geojson-esm)
 
 Turn plain objects into [GeoJSON](https://geojson.org). Same `parse` results as [GeoJSON.js](https://github.com/caseycesari/GeoJSON.js) v0.4.1. The package is the source file, with no build step.
 
-Package: [`geojson-modern`](https://www.npmjs.com/package/geojson-modern)
+Package: [`geojson-esm`](https://www.npmjs.com/package/geojson-esm)
 
 Visit the [GitHub repository](https://github.com/LuisitoLuis/geojson.js) to get more information.
 
@@ -25,25 +25,25 @@ Visit the [GitHub repository](https://github.com/LuisitoLuis/geojson.js) to get 
 - npm
 
 ```bash
-npm install geojson-modern
+npm install geojson-esm
 ```
 
 - pnpm
 
 ```bash
-pnpm add geojson-modern
+pnpm add geojson-esm
 ```
 
 - bun
 
 ```bash
-bun add geojson-modern
+bun add geojson-esm
 ```
 
 - deno
 
 ```bash
-deno add npm:geojson-modern
+deno add npm:geojson-esm
 ```
 
 ## Usage :gear:
@@ -53,7 +53,7 @@ deno add npm:geojson-modern
 > Pass an array of objects and the fields that hold latitude and longitude:
 
 ```js
-import { parse } from "geojson-modern";
+import { parse } from "geojson-esm";
 
 const data = [
   { name: "Location A", category: "Store", lat: 39.984, lng: -75.343 },
@@ -110,7 +110,7 @@ Attribute names accept dots: `Point: ['location.lat', 'location.lng']`.
 The first geometry key that matches an item wins, in the order written in the options object. `defaults` fills any key the call left unset.
 
 ```js
-import { defaults, parse } from "geojson-modern";
+import { defaults, parse } from "geojson-esm";
 
 defaults.Point = ["lat", "lng"];
 defaults.include = ["name"];
