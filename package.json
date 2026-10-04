@@ -2,7 +2,7 @@
   "name": "geojson-esm",
   "version": "0.0.1",
   "description": "Turn plain JS objects into GeoJSON. Modern ESM port of GeoJSON.js v0.4.1 with the same parse behavior.",
-  "packageManager": "pnpm@11.21.0",
+  "packageManager": "pnpm@12.9.1",
   "author": "luisitoluis",
   "license": "MIT",
   "type": "module",
